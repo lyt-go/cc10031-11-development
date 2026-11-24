@@ -77,5 +77,22 @@ npm run dev
 - 列表接口统一返回 `{ items, total, page, size }`，动作接口统一返回 `{ ok, message }`。
 - 状态流转只允许在 `app/services` 里改，路由层不做业务判断。
 
+## 区间重采复核领取
+
+区间重采在通用资源接口之外，还提供把获批片段交给质量复核人员的专用接口
+（`backend/app/routers/replay_review.py`，挂在 `/api/range_replay/review` 下）：
+
+- `POST /permissions/grant|revoke`、`GET /permissions`：维护复核员的负责测点，
+  按实际复核权限核验数据归属；越权人员只能查看自己的申请状态，不能改动他人的领取结果。
+- `POST /{replay_id}/publish`、`POST /{replay_id}/correct`、`GET /{replay_id}/scope`：
+  复核授权发布与多次更正，历史版本全部留痕；授权变化不会把未提交的区间误计作已完成。
+- `GET /data?point=&start=&end=&reviewer=`：按负责测点和时段读取重采数据，
+  结果区分「正式质检 / 需申请复核 / 未批准」三类并附带领取归属。
+- `POST /{replay_id}/claim`、`POST /sheets/{sheet_id}/claim-next`：领取获批片段、
+  同一张复核单继续取下一批；已提交或已被他人领取的点不能再领。
+- `POST /sheets/{sheet_id}/submit`：提交已完成的那部分区间，系统据此生成尚待复核的
+  剩余时段，并出具质量报告按提交时的实际领用范围关联。
+- `GET /reports/{report_id}/scope`：既有质检报告按当时的领用范围回查。
+
 领域：数据工程
 子方向：数据采集、爬虫与RPA
